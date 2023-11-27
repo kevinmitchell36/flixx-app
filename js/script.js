@@ -1,5 +1,15 @@
 const global = {
   currentPage: window.location.pathname,
+  search: {
+    term: '',
+    type: '',
+    page: 1,
+    totalPages: 1
+  },
+  api: {
+    apiKey: '8b13a4cc510f700167489b1bdaca18e1',
+    apiUrl: 'https://api.themoviedb.org/3/'
+  }
 };
 
 async function displayPopularMovies() {
@@ -200,6 +210,20 @@ function displayBackgroundImage(type, backgroundPath) {
   }
 }
 
+async function search() {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  global.search.type = urlParams.get('type');
+  global.search.term = urlParams.get('search-term');
+
+  if (global.search.term !== '' && global.search.term !== null) {
+    const results = await searchAPIData();
+    console.log(results);
+  } else {
+    showAlert('Please enter a search term');
+  }
+}
+
 async function displaySlider() {
   const {results}   = await fetchAPIData('movie/now_playing')
   results.forEach((movie) => {
@@ -211,7 +235,7 @@ async function displaySlider() {
         "alt="${movie.title}" />
       </a>
       <h4 class="swiper-rating">
-        <i class="fas fa-star text-secondary"></i> ${movie.vote_average} / 10
+        <i class="fas fa-star text-secondary"></i> ${movie.vote_average.toFixed(1)} / 10
       </h4>
     `;
 
@@ -245,12 +269,26 @@ function initSwiper() {
 }
 
 async function fetchAPIData(endpoint) {
-  const API_KEY = '8b13a4cc510f700167489b1bdaca18e1';
-  const API_URL = 'https://api.themoviedb.org/3/';
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiUrl;
   
   showSpinner();
 
   const response = await fetch(`${API_URL}${endpoint}?api_key=8b13a4cc510f700167489b1bdaca18e1`);
+  const data = await response.json();
+
+  hideSpinner();
+
+  return data; 
+}
+
+async function searchAPIData() {
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiUrl;
+  
+  showSpinner();
+
+  const response = await fetch(`${API_URL}search/${global.search.type}?api_key=${API_KEY}&language=en-US&query=${global.search.term}`);
   const data = await response.json();
 
   hideSpinner();
@@ -273,6 +311,15 @@ function highlightActiveLink() {
       link.classList.add('active');
     }
   })
+}
+
+function showAlert(message, className) {
+  const alertEl = document.createElement('div');
+  alertEl.classList.add('alert', className);
+  alertEl.appendChild(document.createTextNode(message));
+  document.querySelector('#alert').appendChild(alertEl);
+
+  setTimeout(() => alertEl.remove(), 3000);
 }
 
 function addCommasToNumber(number) {
@@ -298,7 +345,7 @@ function init() {
       displayShowDetails();
       break;
     case '/search.html':
-      console.log('Search');
+      search();
       break;
   }
 
